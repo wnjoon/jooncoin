@@ -22,6 +22,18 @@ var b *blockchain
 // To execute something just one time in entire program
 var once sync.Once
 
+func (b *block) GetData() string {
+	return b.data
+}
+
+func (b *block) GetHash() string {
+	return b.hash
+}
+
+func (b *block) GetPrevHash() string {
+	return b.prevHash
+}
+
 // return type of blockchain pointer
 // for singleton pattern
 func GetBlockchain() *blockchain {
