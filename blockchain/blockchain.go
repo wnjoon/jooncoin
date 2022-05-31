@@ -6,14 +6,15 @@ import (
 	"sync"
 )
 
-type block struct {
-	data     string
-	hash     string
-	prevHash string
+type Block struct {
+	Data     string `json:"data"`
+	Hash     string `json:"hash"`
+	PrevHash string `json:"previousHash,omitempty"`
+	Height   int    `json:"height"`
 }
 
 type blockchain struct {
-	blocks []*block
+	blocks []*Block
 }
 
 // Singleton pattern
@@ -21,18 +22,6 @@ var b *blockchain
 
 // To execute something just one time in entire program
 var once sync.Once
-
-func (b *block) GetData() string {
-	return b.data
-}
-
-func (b *block) GetHash() string {
-	return b.hash
-}
-
-func (b *block) GetPrevHash() string {
-	return b.prevHash
-}
 
 // return type of blockchain pointer
 // for singleton pattern
@@ -47,8 +36,8 @@ func GetBlockchain() *blockchain {
 }
 
 // data + previous hash => hash
-func (b *block) calculateHash() {
-	b.hash = fmt.Sprintf("%x", sha256.Sum256([]byte(b.data+b.prevHash)))
+func (b *Block) calculateHash() {
+	b.Hash = fmt.Sprintf("%x", sha256.Sum256([]byte(b.Data+b.PrevHash)))
 }
 
 func getLastHash() string {
@@ -58,15 +47,11 @@ func getLastHash() string {
 		return ""
 	}
 
-	return GetBlockchain().blocks[blockchainLength-1].hash
+	return GetBlockchain().blocks[blockchainLength-1].Hash
 }
 
-func createBlock(data string) *block {
-	newBlock := block{
-		data,
-		"",
-		getLastHash(),
-	}
+func createBlock(data string) *Block {
+	newBlock := Block{data, "", getLastHash(), len(GetBlockchain().blocks) + 1}
 	newBlock.calculateHash()
 	return &newBlock
 }
@@ -75,6 +60,10 @@ func (b *blockchain) AddBlock(data string) {
 	b.blocks = append(b.blocks, createBlock((data)))
 }
 
-func (b *blockchain) AllBlocks() []*block {
+func (b *blockchain) AllBlocks() []*Block {
 	return b.blocks
+}
+
+func (b *blockchain) GetBlockByHeight(height int) *Block {
+	return b.blocks[height-1]
 }
