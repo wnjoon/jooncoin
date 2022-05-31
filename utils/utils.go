@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"log"
 )
@@ -15,4 +16,8 @@ func HandleError(err error) {
 
 func PrintConnectionInformation(port string) {
 	fmt.Println("Listening on " + host + port)
+}
+
+func GetHash(value string) string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(value)))
 }
