@@ -26,3 +26,15 @@ r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler)
 - <i>In this program, structure would be "Hash/Block{data, hash, prevHash ....}"</i>
 - In bolt, <u>Tables are called "Buckets"</u>
 - go get github.com/boltdb/bolt/...
+
+3. [evnix/boltdbweb](https://github.com/evnix/boltdbweb)
+- A simple web based boltdb GUI Admin panel.
+- Available to view and <u>change</u> data in database
+- **Usage** : boltdbweb --db-name=<DBfilename>[required] --port=<port>[optional] --static-path=<static-path>[optional]
+- go get github.com/evnix/boltdbweb
+
+4. [br0xen/boltbrowser](https://github.com/br0xen/boltbrowser)
+- A CLI Browser for BoltDB Files
+- Only can view data in database
+- **Usage** : boltbrowser <filename>
+- go get github.com/br0xen/boltbrowser
