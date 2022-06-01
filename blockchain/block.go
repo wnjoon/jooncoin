@@ -3,6 +3,7 @@ package blockchain
 import (
 	"strconv"
 
+	"github.com/wnjoon/jooncoin/db"
 	"github.com/wnjoon/jooncoin/utils"
 )
 
@@ -13,6 +14,10 @@ type Block struct {
 	Height   int    `json:"height"`
 }
 
+// Create block from input parameters
+// data : data to save in block
+// prevHash : hash of previous block
+// height : height of block
 func createBlock(data string, prevHash string, height int) *Block {
 	block := &Block{
 		Data:     data,
@@ -22,5 +27,12 @@ func createBlock(data string, prevHash string, height int) *Block {
 	}
 	payload := block.Data + block.PrevHash + strconv.Itoa(block.Height)
 	block.Hash = utils.GetHash(payload)
+	block.persist()
 	return block
+}
+
+// Save block in database for persistence
+// Shold change block struct to []byte
+func (b *Block) persist() {
+	db.SaveBlock(b.Hash, utils.ToBytes(b))
 }
