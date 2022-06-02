@@ -23,6 +23,16 @@ type balanceResponse struct {
 	Balance int    `json:"balance"`
 }
 
+// Struct for Transaction payload
+type txPayload struct {
+	To     string
+	Amount int
+}
+
+type ErrorResponse struct {
+	ErrorMessage string `json:"errorMessage"`
+}
+
 func handlers(router *mux.Router) {
 	router.Use(jsonContentTypeMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
@@ -32,6 +42,8 @@ func handlers(router *mux.Router) {
 	router.HandleFunc("/block", block).Methods("POST")
 	router.HandleFunc("/status", status).Methods("GET")
 	router.HandleFunc("/balance/{address}", balance).Methods("GET")
+	router.HandleFunc("/mempool", mempool).Methods("GET")
+	router.HandleFunc("/transaction", transaction)
 
 }
 
@@ -121,6 +133,23 @@ func balance(rw http.ResponseWriter, r *http.Request) {
 		err := encoder.Encode(blockchain.Blockchain().TxOutByAddress(address))
 		utils.HandleError(err)
 	}
+}
+
+func transaction(rw http.ResponseWriter, r *http.Request) {
+	var payload txPayload
+	utils.HandleError(json.NewDecoder(r.Body).Decode(&payload))
+
+	err := blockchain.Mempool.AddTx(payload.To, payload.Amount)
+	if err != nil {
+		json.NewEncoder(rw).Encode(utils.ErrorResponse{"not Enough funds"})
+	}
+	rw.WriteHeader(http.StatusCreated)
+
+}
+
+// Get mempool
+func mempool(rw http.ResponseWriter, r *http.Request) {
+	utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Mempool.Txs))
 }
 
 /*

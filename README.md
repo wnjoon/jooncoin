@@ -74,6 +74,14 @@ It is created not by User, only by blockchain itself. And TxOut goes to miner.
 
 > Blockchain makes money to reward miner who verify transactions to create block in blockchain!
 
- 
+### Mempool
+
+Array or Slice of unconfirmed transactions.  
+Transactions in mempool don't exist in blockchain. So transactions are confirmed when miner makes a block with transaction and append block to blockchain.  
+Mempool only exists in memory, not database.
+
+> When Miner makes a block, User pay a fee to miner for their effort
+
+
 
 
