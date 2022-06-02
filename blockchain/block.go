@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/wnjoon/jooncoin/db"
@@ -24,14 +23,14 @@ type Block struct {
 // height : height of block
 func createBlock(prevHash string, height int) *Block {
 	block := &Block{
-		Hash:         "",
-		PrevHash:     prevHash,
-		Height:       height,
-		Difficulty:   Blockchain().difficulty(),
-		Nonce:        0,
-		Transactions: []*Tx{createCoinbaseTx("user")},
+		Hash:       "",
+		PrevHash:   prevHash,
+		Height:     height,
+		Difficulty: Blockchain().difficulty(),
+		Nonce:      0,
 	}
 	block.mine()
+	block.Transactions = Mempool.TxConfirm()
 	block.persist()
 	return block
 }
@@ -53,7 +52,7 @@ func (b *Block) mine() {
 	for {
 		b.TimeStamp = utils.TimeStamp()
 		hash := utils.Hash(b)
-		fmt.Printf("\n\n\nTarget:%s\nHash:%s\nNonce:%d\n\n\n", target, hash, b.Nonce)
+		// fmt.Printf("\n\n\nTarget:%s\nHash:%s\nNonce:%d\n\n\n", target, hash, b.Nonce)
 		if strings.HasPrefix(hash, target) {
 			b.Hash = hash
 			return

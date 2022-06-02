@@ -16,7 +16,18 @@ POST http://localhost:4000/block
 http://localhost:4000/status
 
 ### Get all balance of address
-http://localhost:4000/balance/user?total=true
+http://localhost:4000/balance/joon?total=true
 
 ### Get Trasnaction Output of address
-http://localhost:4000/balance/user
+http://localhost:4000/balance/joon
+
+###
+http://localhost:4000/transaction
+
+{
+    "to":"lynn",
+    "amount":100
+}
+
+###
+http://localhost:4000/mempool
