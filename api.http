@@ -13,5 +13,9 @@ http://localhost:4000/block/ab55de6d68d319065f9c26920985a8c25e20d07c4d205ebc4597
 POST http://localhost:4000/block
 
 {
-    "Message" : "Fifth Block"
+    "Message" : "Dummy Data"
 }
+
+###
+
+http://localhost:4000/status

@@ -16,7 +16,7 @@ var port string
 
 func Start(_port int) {
 	router := mux.NewRouter()
-	port = setPort(_port)
+	port = utils.SetPort(_port)
 
 	handlers(router)
 

@@ -31,9 +31,11 @@ func handlers(router *mux.Router) {
 	// router.HandleFunc("/block/{hash:[a-z0-9]*}", block).Methods("GET", "POST")
 	router.HandleFunc("/block/{hash:[a-z0-9]+}", block).Methods("GET")
 	router.HandleFunc("/block", block).Methods("POST")
+	router.HandleFunc("/status", status).Methods("GET")
 
 }
 
+// Print documentation how to use api
 func documentation(rw http.ResponseWriter, r *http.Request) {
 	data := []urlDescription{
 		{
@@ -57,12 +59,18 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Description: "Add A Block",
 			Payload:     "data:string",
 		},
+		{
+			URL:         url("/status"),
+			Method:      "GET",
+			Description: "See the Status of the Blockchain",
+		},
 	}
 	utils.HandleError(json.NewEncoder(rw).Encode(data))
 }
 
+// 1. Get Block of hash
+// 2. Create block of data
 func block(rw http.ResponseWriter, r *http.Request) {
-
 	switch r.Method {
 	case "GET":
 		// Get block from its hash
@@ -84,6 +92,31 @@ func block(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Get blockchain
 func blocks(rw http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(rw).Encode(blockchain.Blockchain().Blocks())
+}
+
+// Get status of blockchain
+func status(rw http.ResponseWriter, r *http.Request) {
+	utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Blockchain()))
+}
+
+/*
+ *
+ * Minor priority functions
+ */
+// Marshal text of url
+func (u url) MarshalText() ([]byte, error) {
+	url := fmt.Sprintf("http://localhost%s%s", port, u)
+	return []byte(url), nil
+}
+
+// Create middleware for add http header of json
+// Called adapter using http.HandleFunc
+func jsonContentTypeMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Add("Content-Type", "application/json")
+		next.ServeHTTP(rw, r)
+	})
 }

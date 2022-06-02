@@ -1,17 +1,21 @@
 package blockchain
 
 import (
-	"strconv"
+	"fmt"
+	"strings"
 
 	"github.com/wnjoon/jooncoin/db"
 	"github.com/wnjoon/jooncoin/utils"
 )
 
 type Block struct {
-	Data     string `json:"data"`
-	Hash     string `json:"hash"`
-	PrevHash string `json:"prevHash"`
-	Height   int    `json:"height"`
+	Data       string `json:"data"`
+	Hash       string `json:"hash"`
+	PrevHash   string `json:"prevHash"`
+	Height     int    `json:"height"`
+	Difficulty int    `json:"difficulty"`
+	Nonce      int    `json:"nonce"`
+	TimeStamp  int    `json:"timestamp"`
 }
 
 // Create block from input parameters
@@ -20,13 +24,14 @@ type Block struct {
 // height : height of block
 func createBlock(data string, prevHash string, height int) *Block {
 	block := &Block{
-		Data:     data,
-		Hash:     "",
-		PrevHash: prevHash,
-		Height:   height,
+		Data:       data,
+		Hash:       "",
+		PrevHash:   prevHash,
+		Height:     height,
+		Difficulty: Blockchain().difficulty(),
+		Nonce:      0,
 	}
-	payload := block.Data + block.PrevHash + strconv.Itoa(block.Height)
-	block.Hash = utils.GetHash(payload)
+	block.mine()
 	block.persist()
 	return block
 }
@@ -40,6 +45,21 @@ func GetBlock(hash string) (*Block, error) {
 	block := &Block{}
 	block.restore(blockBytes)
 	return block, nil
+}
+
+// Find certain number of zeros in front of hash for mining
+func (b *Block) mine() {
+	target := strings.Repeat("0", b.Difficulty) // make number of zeros to verify mining
+	for {
+		b.TimeStamp = utils.TimeStamp()
+		hash := utils.Hash(b)
+		fmt.Printf("\n\n\nTarget:%s\nHash:%s\nNonce:%d\n\n\n", target, hash, b.Nonce)
+		if strings.HasPrefix(hash, target) {
+			b.Hash = hash
+			return
+		}
+		b.Nonce++
+	}
 }
 
 /*

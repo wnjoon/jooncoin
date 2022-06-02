@@ -6,6 +6,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
+	"time"
 )
 
 var host string = "http://localhost"
@@ -15,11 +16,6 @@ func HandleError(err error) {
 	if err != nil {
 		log.Panic(err)
 	}
-}
-
-// Generate hash value from string
-func GetHash(value string) string {
-	return fmt.Sprintf("%x", sha256.Sum256([]byte(value)))
 }
 
 // Generate Bytes from interface
@@ -41,6 +37,18 @@ func FromBytes(i interface{}, data []byte) {
 	HandleError(err)
 }
 
+// Get Hash of any type data
+func Hash(i interface{}) string {
+	str := fmt.Sprintf("%v", i)
+	hash := sha256.Sum256([]byte(str))
+	return fmt.Sprintf("%x", hash)
+}
+
+// Get Timestamp
+func TimeStamp() int {
+	return int(time.Now().Unix())
+}
+
 /*
  *
  * Minor priority utilities
@@ -48,4 +56,9 @@ func FromBytes(i interface{}, data []byte) {
 // Print connection information using port
 func PrintConnectionInformation(port string) {
 	fmt.Println("Listening on " + host + port)
+}
+
+// Set Rest API port
+func SetPort(_port int) string {
+	return fmt.Sprintf(":%d", _port)
 }

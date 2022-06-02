@@ -42,3 +42,16 @@ r.HandleFunc("/articles/{category}/{id:[0-9]+}", ArticleHandler)
 - Only can view data in database
 - **Usage** : boltbrowser <filename>
 - go get github.com/br0xen/boltbrowser
+
+## Proof of Work
+
+In this blockchain, We adjust PoW(Proof of Work) consensus for approval and security used in bitcoin.  
+Acutally, PoW is a little bit older strategy since its energy consumption, however, we can acknowledge inside of blockchain system such as difficulty, nonce, transactions, etc.  
+
+- difficulty : Determine zero numbers in front of hash
+- nonce : Only changable inside of blockchain
+
+> Hard to calculate the answer(with difficulty), but easy to verify the answer.
+
+
+
