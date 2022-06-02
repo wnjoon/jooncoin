@@ -11,7 +11,6 @@ import (
 )
 
 type url string
-
 type urlDescription struct {
 	URL         url    `json:"url"`
 	Method      string `json:"method"`
@@ -19,9 +18,9 @@ type urlDescription struct {
 	Payload     string `json:"payload,omitempty"`
 }
 
-type blockBody struct {
-	// Message includes data
-	Message string
+type balanceResponse struct {
+	Address string `json:"address"`
+	Balance int    `json:"balance"`
 }
 
 func handlers(router *mux.Router) {
@@ -32,6 +31,7 @@ func handlers(router *mux.Router) {
 	router.HandleFunc("/block/{hash:[a-z0-9]+}", block).Methods("GET")
 	router.HandleFunc("/block", block).Methods("POST")
 	router.HandleFunc("/status", status).Methods("GET")
+	router.HandleFunc("/balance/{address}", balance).Methods("GET")
 
 }
 
@@ -64,6 +64,11 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Method:      "GET",
 			Description: "See the Status of the Blockchain",
 		},
+		{
+			URL:         url("/balance/{address}"),
+			Method:      "GET",
+			Description: "Get balance of address by TxOut",
+		},
 	}
 	utils.HandleError(json.NewEncoder(rw).Encode(data))
 }
@@ -85,9 +90,7 @@ func block(rw http.ResponseWriter, r *http.Request) {
 			encoder.Encode(block)
 		}
 	case "POST":
-		var body blockBody
-		utils.HandleError(json.NewDecoder(r.Body).Decode(&body))
-		blockchain.Blockchain().AddBlock(body.Message)
+		blockchain.Blockchain().AddBlock()
 		rw.WriteHeader(http.StatusCreated)
 	}
 }
@@ -100,6 +103,24 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 // Get status of blockchain
 func status(rw http.ResponseWriter, r *http.Request) {
 	utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Blockchain()))
+}
+
+// Get balance of address by TxOut
+func balance(rw http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	encoder := json.NewEncoder(rw)
+
+	address := vars["address"]
+	total := r.URL.Query().Get("total") // If URL has a suffix named "total" and its value => switch to get a total balance or seperated balances
+
+	switch total {
+	case "true":
+		amount := blockchain.Blockchain().BalanceOfAddressByTxOut(address)
+		encoder.Encode(balanceResponse{address, amount})
+	default:
+		err := encoder.Encode(blockchain.Blockchain().TxOutByAddress(address))
+		utils.HandleError(err)
+	}
 }
 
 /*

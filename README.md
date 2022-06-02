@@ -53,5 +53,27 @@ Acutally, PoW is a little bit older strategy since its energy consumption, howev
 
 > Hard to calculate the answer(with difficulty), but easy to verify the answer.
 
+## Transaction
+
+### UTXO
+
+In this blockchain, We adjust UTXO(Unspent Transaction Output) model to transfer transaction.  
+Transaction can be seperated into 2 models, Transaction input and Transaction output.  
+- Transaction Input (TxIn) : Amount of money before user start transaction
+- Transaction Output (TxOut) : Amount of money own by all users after transaction
+- If User1 has $5 and give $3 to User2 who doesn't have any dollars, TxIn and TxOut might be
+	- TxIn["$5(User1)"] -> We cannot divide $5. It is just one piece of paper
+	- TxOut["$3(User2)", "$2(User1)", ] -> User2 should give change
+
+So If user wants to know how much money in blockchain network, <u>Only counting on TxOut is necessary</u> and this is a mechanism of bitcoin(and also this mimic coin).  
+
+### Coinbase
+
+It indicates <u>how to reward to miner</u> and what to write for creation TxIn.  
+It is created not by User, only by blockchain itself. And TxOut goes to miner.  
+
+> Blockchain makes money to reward miner who verify transactions to create block in blockchain!
+
+ 
 
 

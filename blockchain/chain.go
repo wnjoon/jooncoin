@@ -34,7 +34,7 @@ func Blockchain() *blockchain {
 			}
 			checkpoint := db.Checkpoint()
 			if checkpoint == nil {
-				b.AddBlock("Genesis")
+				b.AddBlock()
 			} else {
 				b.restore(checkpoint)
 			}
@@ -45,8 +45,8 @@ func Blockchain() *blockchain {
 
 // Add block to blockchain
 // Save blockchain updated from latest block to database for persistence
-func (b *blockchain) AddBlock(data string) {
-	block := createBlock(data, b.LastHash, b.Height+1)
+func (b *blockchain) AddBlock() {
+	block := createBlock(b.LastHash, b.Height+1)
 	b.LastHash = block.Hash
 	b.Height = block.Height
 	b.CurrentDifficulty = block.Difficulty
@@ -65,6 +65,45 @@ func (b *blockchain) Blocks() []*Block {
 		hash = block.PrevHash
 	}
 	return blockchain
+}
+
+// Get all transactionOut from blockchain
+// Actually.. Due to this function, System should loop double times to get something from txOuts
+// I think this function should not be exists then combine with some functions to get deterministic value
+func (b *blockchain) txOuts() []*TxOut {
+	var txOuts []*TxOut
+	blockchain := b.Blocks()
+
+	for _, block := range blockchain {
+		for _, tx := range block.Transactions {
+			txOuts = append(txOuts, tx.TxOuts...)
+		}
+	}
+	return txOuts
+}
+
+// Get Transaction Out of address
+func (b *blockchain) TxOutByAddress(address string) []*TxOut {
+	var txOutOfAddress []*TxOut
+	txOuts := b.txOuts()
+
+	for _, txOut := range txOuts {
+		if txOut.Owner == address {
+			txOutOfAddress = append(txOutOfAddress, txOut)
+		}
+	}
+	return txOutOfAddress
+}
+
+// Get Balance of address by TxOut
+// We have to use 2 functions with inside loops.. so wasty of memory...
+func (b *blockchain) BalanceOfAddressByTxOut(address string) int {
+	txOuts := b.TxOutByAddress(address)
+	var amount int
+	for _, txOut := range txOuts {
+		amount += txOut.Amount
+	}
+	return amount
 }
 
 /*

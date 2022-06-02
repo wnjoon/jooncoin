@@ -1,21 +1,22 @@
 
-
+### See documentation
 http://localhost:4000/
 
-###
+### Get all blocks in blockchain
 http://localhost:4000/blocks
 
-###
+### Get block has input parameter of hash
 http://localhost:4000/block/ab55de6d68d319065f9c26920985a8c25e20d07c4d205ebc4597d25f6e5dcc79
 
-###
-
+### Create block
 POST http://localhost:4000/block
 
-{
-    "Message" : "Dummy Data"
-}
 
-###
-
+### Get Status of blockchain
 http://localhost:4000/status
+
+### Get all balance of address
+http://localhost:4000/balance/user?total=true
+
+### Get Trasnaction Output of address
+http://localhost:4000/balance/user
