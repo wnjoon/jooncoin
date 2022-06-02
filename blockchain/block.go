@@ -31,8 +31,28 @@ func createBlock(data string, prevHash string, height int) *Block {
 	return block
 }
 
+// Get Block from input hash parameter
+func GetBlock(hash string) (*Block, error) {
+	blockBytes := db.Block(hash)
+	if blockBytes == nil {
+		return nil, utils.ErrBlockNotFound
+	}
+	block := &Block{}
+	block.restore(blockBytes)
+	return block, nil
+}
+
+/*
+ * Minor Utilities
+ *
+ */
 // Save block in database for persistence
 // Shold change block struct to []byte
 func (b *Block) persist() {
 	db.SaveBlock(b.Hash, utils.ToBytes(b))
+}
+
+// Restore blockhain from database
+func (b *Block) restore(data []byte) {
+	utils.FromBytes(b, data)
 }

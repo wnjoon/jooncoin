@@ -2,9 +2,11 @@ package rest
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/wnjoon/jooncoin/blockchain"
 	"github.com/wnjoon/jooncoin/utils"
 )
 
@@ -25,9 +27,10 @@ type blockBody struct {
 func handlers(router *mux.Router) {
 	router.Use(jsonContentTypeMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
-	// router.HandleFunc("/blocks", getAllBlocks).Methods("GET")
-	// router.HandleFunc("/block/{height:[0-9]+}", getBlockByHeight).Methods("GET")
-	// router.HandleFunc("/block", createBlock).Methods("POST")
+	router.HandleFunc("/blocks", blocks).Methods("GET")
+	// router.HandleFunc("/block/{hash:[a-z0-9]*}", block).Methods("GET", "POST")
+	router.HandleFunc("/block/{hash:[a-z0-9]+}", block).Methods("GET")
+	router.HandleFunc("/block", block).Methods("POST")
 
 }
 
@@ -44,9 +47,9 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Description: "Get all blocks",
 		},
 		{
-			URL:         url("/block/{height}"),
+			URL:         url("/block/{hash}"),
 			Method:      "GET",
-			Description: "Get a block has id",
+			Description: "Get a block from its hash",
 		},
 		{
 			URL:         url("/block"),
@@ -58,28 +61,29 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 	utils.HandleError(json.NewEncoder(rw).Encode(data))
 }
 
-// func getBlockByHeight(rw http.ResponseWriter, r *http.Request) {
-// 	// vars := mux.Vars(r)
-// 	blockHeight, err := strconv.Atoi((mux.Vars(r))["height"])
-// 	utils.HandleError(err)
+func block(rw http.ResponseWriter, r *http.Request) {
 
-// 	block, err := blockchain.GetBlockchain().GetBlockByHeight(blockHeight)
+	switch r.Method {
+	case "GET":
+		// Get block from its hash
+		vars := mux.Vars(r)
+		encoder := json.NewEncoder(rw)
 
-// 	encoder := json.NewEncoder(rw)
-// 	if err == utils.ErrBlockNotFound {
-// 		encoder.Encode(utils.ErrorResponse{ErrorMessage: fmt.Sprint(err)})
-// 	} else {
-// 		encoder.Encode(block)
-// 	}
-// }
+		hash := vars["hash"]
+		block, err := blockchain.GetBlock(hash)
+		if err == utils.ErrBlockNotFound {
+			encoder.Encode(utils.ErrorResponse{fmt.Sprint(err)})
+		} else {
+			encoder.Encode(block)
+		}
+	case "POST":
+		var body blockBody
+		utils.HandleError(json.NewDecoder(r.Body).Decode(&body))
+		blockchain.Blockchain().AddBlock(body.Message)
+		rw.WriteHeader(http.StatusCreated)
+	}
+}
 
-// func getAllBlocks(rw http.ResponseWriter, r *http.Request) {
-// 	json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
-// }
-
-// func createBlock(rw http.ResponseWriter, r *http.Request) {
-// 	var body blockBody
-// 	utils.HandleError(json.NewDecoder(r.Body).Decode(&body))
-// 	blockchain.GetBlockchain().AddBlock(body.Message)
-// 	rw.WriteHeader(http.StatusCreated)
-// }
+func blocks(rw http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(rw).Encode(blockchain.Blockchain().Blocks())
+}

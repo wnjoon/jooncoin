@@ -1,6 +1,10 @@
 # jooncoin
 Practice making coin based blockchain using golang learned by NomadCoder
 
+> [Nomad Coder - nomad coin](https://nomadcoders.co/nomadcoin/lobby)
+
+<br>
+
 ## Setting Environment
 
 - go.mod : Pretty simillar to package.json in Javascript

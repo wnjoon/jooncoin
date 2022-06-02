@@ -76,3 +76,15 @@ func SaveBlockchain(data []byte) {
 
 	fmt.Printf("Saved blockchain\n-Data : %b\n", data)
 }
+
+// Get Block from bucket "blockbucket"
+// By Its hash []byte
+func Block(hash string) []byte {
+	var data []byte
+	DB().View(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket([]byte(blockBuckets))
+		data = bucket.Get([]byte(hash))
+		return nil
+	})
+	return data
+}

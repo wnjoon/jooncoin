@@ -34,6 +34,13 @@ func ToBytes(i interface{}) []byte {
 	return aBuffer.Bytes()
 }
 
+// Get data from bytes
+func FromBytes(i interface{}, data []byte) {
+	decoder := gob.NewDecoder(bytes.NewReader(data))
+	err := decoder.Decode(i)
+	HandleError(err)
+}
+
 /*
  *
  * Minor priority utilities

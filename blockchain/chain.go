@@ -1,8 +1,6 @@
 package blockchain
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"sync"
 
@@ -36,13 +34,8 @@ func Blockchain() *blockchain {
 		})
 		fmt.Printf("Restoring complete\n-latestHash : %s\n-Height : %d\n", b.LastHash, b.Height)
 	}
+	fmt.Printf("-input hash(%d) : %s\n", b.Height, b.LastHash)
 	return b
-}
-
-// Restore blockchain from database
-func (b *blockchain) restore(data []byte) {
-	err := gob.NewDecoder(bytes.NewReader(data)).Decode((b))
-	utils.HandleError(err)
 }
 
 // Add block to blockchain
@@ -54,6 +47,30 @@ func (b *blockchain) AddBlock(data string) {
 	b.persist()
 }
 
+// Get blockchain includes all blocks
+// From database
+func (b *blockchain) Blocks() []*Block {
+	var blockchain []*Block
+	hash := b.LastHash
+
+	for hash != "" {
+		block, _ := GetBlock(hash)
+		blockchain = append(blockchain, block)
+		hash = block.PrevHash
+	}
+	return blockchain
+}
+
+/*
+ * Minor Utilities
+ *
+ */
+// Persist block to blockchain database
 func (b *blockchain) persist() {
 	db.SaveBlockchain(utils.ToBytes(b))
+}
+
+// Restore blockchain from database
+func (b *blockchain) restore(data []byte) {
+	utils.FromBytes(b, data)
 }
