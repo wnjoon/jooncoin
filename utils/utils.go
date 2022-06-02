@@ -45,7 +45,6 @@ func FromBytes(i interface{}, data []byte) {
  *
  * Minor priority utilities
  */
-
 // Print connection information using port
 func PrintConnectionInformation(port string) {
 	fmt.Println("Listening on " + host + port)

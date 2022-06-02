@@ -1,8 +1,6 @@
 package db
 
 import (
-	"fmt"
-
 	"github.com/boltdb/bolt"
 	"github.com/wnjoon/jooncoin/utils"
 )
@@ -60,8 +58,6 @@ func SaveBlock(hash string, data []byte) {
 		return err
 	})
 	utils.HandleError(err)
-
-	fmt.Printf("Saved block\n-Hash : %s\n-Block : %b\n", hash, data)
 }
 
 // Save "Blockchain" with its Block data
@@ -73,8 +69,6 @@ func SaveBlockchain(data []byte) {
 		return err
 	})
 	utils.HandleError(err)
-
-	fmt.Printf("Saved blockchain\n-Data : %b\n", data)
 }
 
 // Get Block from bucket "blockbucket"

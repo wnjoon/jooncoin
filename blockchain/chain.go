@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/wnjoon/jooncoin/db"
@@ -23,18 +22,14 @@ func Blockchain() *blockchain {
 	if b == nil {
 		once.Do(func() {
 			b = &blockchain{"", 0}
-			fmt.Printf("Initiaized value\n-latestHash : %s\n-Height : %d\n", b.LastHash, b.Height)
 			checkpoint := db.Checkpoint()
 			if checkpoint == nil {
 				b.AddBlock("Genesis")
 			} else {
-				fmt.Println("Restoring...)")
 				b.restore(checkpoint)
 			}
 		})
-		fmt.Printf("Restoring complete\n-latestHash : %s\n-Height : %d\n", b.LastHash, b.Height)
 	}
-	fmt.Printf("-input hash(%d) : %s\n", b.Height, b.LastHash)
 	return b
 }
 
