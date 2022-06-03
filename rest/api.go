@@ -43,7 +43,7 @@ func handlers(router *mux.Router) {
 	router.HandleFunc("/status", status).Methods("GET")
 	router.HandleFunc("/balance/{address}", balance).Methods("GET")
 	router.HandleFunc("/mempool", mempool).Methods("GET")
-	router.HandleFunc("/transaction", transaction)
+	router.HandleFunc("/transaction", transaction).Methods("POST")
 
 }
 

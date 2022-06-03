@@ -55,22 +55,19 @@ func restoreKey() *ecdsa.PrivateKey {
 
 // Get Address from privatekey
 func getAddressFromPrivateKey(key *ecdsa.PrivateKey) string {
-	address := append(key.X.Bytes(), key.Y.Bytes()...)
-	return fmt.Sprintf("%x", address)
+	return encodeBigInts(key.X.Bytes(), key.Y.Bytes())
 }
 
 // Sign payload with privatekey
 // return signature
 func Sign(payload string, w *wallet) string {
-	payloadBytes, err := hex.DecodeString(payload)
-	utils.HandleError(err)
+	payloadBytes := decodeToBytes(payload)
 
 	// Sign -> r, s will be created and also error
 	r, s, err := ecdsa.Sign(rand.Reader, w.privateKey, payloadBytes)
 	utils.HandleError(err)
 
-	signature := append(r.Bytes(), s.Bytes()...)
-	return fmt.Sprintf("%x", signature)
+	return encodeBigInts(r.Bytes(), s.Bytes())
 }
 
 // Verify signature
@@ -90,8 +87,7 @@ func verify(signature, payload, address string) bool {
 		X:     x,
 		Y:     y,
 	}
-	payloadBytes, err := hex.DecodeString(payload)
-	utils.HandleError(err)
+	payloadBytes := decodeToBytes(payload)
 
 	ok := ecdsa.Verify(&publicKey, payloadBytes, r, s)
 	return ok
@@ -135,4 +131,18 @@ func restoreBigInts(payload string) (*big.Int, *big.Int, error) {
 	bigEnd.SetBytes(endBytes)
 
 	return &bigFront, &bigEnd, nil
+}
+
+// Encode 2 bytes type of bigInts to string
+func encodeBigInts(a, b []byte) string {
+	result := append(a, b...)
+	return fmt.Sprintf("%x", result)
+}
+
+// Decode String and check errors
+// Just return decoded string
+func decodeToBytes(payload string) []byte {
+	payloadBytes, err := hex.DecodeString(payload)
+	utils.HandleError(err)
+	return payloadBytes
 }
