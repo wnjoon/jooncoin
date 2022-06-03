@@ -97,19 +97,19 @@ func block(rw http.ResponseWriter, r *http.Request) {
 		hash := vars["hash"]
 		block, err := blockchain.GetBlock(hash)
 		if err == utils.ErrBlockNotFound {
-			encoder.Encode(utils.ErrorResponse{fmt.Sprint(err)})
+			encoder.Encode(utils.ErrorResponse{ErrorMessage: fmt.Sprint(err)})
 		} else {
 			encoder.Encode(block)
 		}
 	case "POST":
-		blockchain.Blockchain().AddBlock()
+		blockchain.AddBlock(blockchain.Blockchain())
 		rw.WriteHeader(http.StatusCreated)
 	}
 }
 
 // Get blockchain
 func blocks(rw http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(rw).Encode(blockchain.Blockchain().Blocks())
+	json.NewEncoder(rw).Encode(blockchain.Blocks(blockchain.Blockchain()))
 }
 
 // Get status of blockchain
@@ -127,10 +127,10 @@ func balance(rw http.ResponseWriter, r *http.Request) {
 
 	switch total {
 	case "true":
-		amount := blockchain.Blockchain().BalanceOfAddressByTxOut(address)
+		amount := blockchain.BalanceOfAddressByTxOut(address, blockchain.Blockchain())
 		encoder.Encode(balanceResponse{address, amount})
 	default:
-		err := encoder.Encode(blockchain.Blockchain().TxOutByAddress(address))
+		err := encoder.Encode(blockchain.UTxOutsByAddress(address, blockchain.Blockchain()))
 		utils.HandleError(err)
 	}
 }
@@ -141,7 +141,7 @@ func transaction(rw http.ResponseWriter, r *http.Request) {
 
 	err := blockchain.Mempool.AddTx(payload.To, payload.Amount)
 	if err != nil {
-		json.NewEncoder(rw).Encode(utils.ErrorResponse{"not Enough funds"})
+		json.NewEncoder(rw).Encode(utils.ErrorResponse{ErrorMessage: "not Enough funds"})
 	}
 	rw.WriteHeader(http.StatusCreated)
 

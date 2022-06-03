@@ -23,14 +23,22 @@ type Tx struct {
 
 // Struct for transaction input
 type TxIn struct {
+	TxId  string `json:"txId"`  // Transaction Id used to create transaction output
+	Index int    `json:"index"` // Index where transaction output is come from in transaction input
+	Owner string `json:"owner"`
+}
+
+// Struct for transaction output already spent
+type TxOut struct {
 	Owner  string `json:"owner"`
 	Amount int    `json:"amount"`
 }
 
-// Struct for transaction output
-type TxOut struct {
-	Owner  string `json:"owner"`
-	Amount int    `json:"amount"`
+// Struct for transaction output unspent yet
+type UTxOut struct {
+	TxId   string
+	Index  int
+	Amount int
 }
 
 // Struct for mempool
@@ -50,7 +58,8 @@ func (t *Tx) getId() {
 // When miner creates block, coinbase gives amount of money to miner
 func createCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
-		{coinbaseName, mineReward},
+		// Initialize TxIn with empty value and coinbase
+		{"", -1, coinbaseName},
 	}
 	txOuts := []*TxOut{
 		{address, mineReward},
@@ -68,52 +77,58 @@ func createCoinbaseTx(address string) *Tx {
 // Create Transaction
 // Not by coinbase (from user)
 func createTx(from, to string, amount int) (*Tx, error) {
-	// Check from address has enough amount
-	if Blockchain().BalanceOfAddressByTxOut(from) < amount {
-		return nil, errors.New("not enough amount to send")
+	if BalanceOfAddressByTxOut(from, Blockchain()) < amount {
+		return nil, errors.New("not enough amount to spend")
 	}
 
-	var txIns []*TxIn
 	var txOuts []*TxOut
+	var txIns []*TxIn
 
-	totalAmount := 0
+	// Total amount of used for spend
+	total := 0
 
-	prevTxOuts := Blockchain().TxOutByAddress(from)
-	for _, txOut := range prevTxOuts {
-		if totalAmount > amount {
+	// Get all Unspent transaction outputs of 'from address'
+	uTxOuts := UTxOutsByAddress(from, Blockchain())
+
+	for _, uTxOut := range uTxOuts {
+		if total >= amount {
 			break
 		}
-		txIn := &TxIn{txOut.Owner, txOut.Amount}
+		txIn := &TxIn{uTxOut.TxId, uTxOut.Index, from}
 		txIns = append(txIns, txIn)
-		totalAmount += txOut.Amount
+		// Sum amount of 'from address'
+		total += uTxOut.Amount
 	}
 
-	// If change exists
-	change := totalAmount - amount
+	// Check out change
+	change := total - amount
+
 	if change > 0 {
+		// Make Transaction Out of change of 'from address'
 		changeTxOut := &TxOut{from, change}
 		txOuts = append(txOuts, changeTxOut)
 	}
 
+	// Set Transaction output of 'to address' with amount to receive
 	txOut := &TxOut{to, amount}
 	txOuts = append(txOuts, txOut)
 
+	// Create Transaction with input/output
 	tx := &Tx{
 		Id:        "",
 		Timestamp: utils.TimeStamp(),
 		TxIns:     txIns,
 		TxOuts:    txOuts,
 	}
-	tx.getId()
-	// fmt.Println(tx.Id, " ", tx.Timestamp, " ", tx.TxIns, " ", tx.TxOuts)
 
+	tx.getId()
 	return tx, nil
+
 }
 
 // Add Transaction to mempool
 func (m *mempool) AddTx(to string, amount int) error {
 	tx, err := createTx(testAddress, to, amount)
-	// fmt.Println(tx.Id, " ", tx.Timestamp, " ", tx.TxIns, " ", tx.TxOuts)
 	if err != nil {
 		return err
 	}
@@ -129,4 +144,17 @@ func (m *mempool) TxConfirm() []*Tx {
 	txs = append(txs, coinbase) // Add coinbase for reward of mining
 	m.Txs = nil                 // delete all transactions in mempool
 	return txs
+}
+
+// Check Transaction output is still in mempool
+// If it is exists, DON'T SPEND AMOUNT DOUBLE. We have to block it
+func isOnMempool(uTxOut *UTxOut) bool {
+	for _, tx := range Mempool.Txs {
+		for _, txIn := range tx.TxIns {
+			if uTxOut.TxId == txIn.TxId && uTxOut.Index == txIn.Index {
+				return true
+			}
+		}
+	}
+	return false
 }

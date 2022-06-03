@@ -27,35 +27,38 @@ const (
 // Load blockchain from database (blockchain.db)
 // Using DB() in db/db.go
 func Blockchain() *blockchain {
-	if b == nil {
-		once.Do(func() {
-			b = &blockchain{
-				Height: 0,
-			}
-			checkpoint := db.Checkpoint()
-			if checkpoint == nil {
-				b.AddBlock()
-			} else {
-				b.restore(checkpoint)
-			}
-		})
-	}
+	once.Do(func() {
+		b = &blockchain{
+			Height: 0,
+		}
+		checkpoint := db.Checkpoint()
+		if checkpoint == nil {
+			AddBlock(b)
+		} else {
+			b.restore(checkpoint)
+		}
+	})
 	return b
 }
 
-// Add block to blockchain
-// Save blockchain updated from latest block to database for persistence
-func (b *blockchain) AddBlock() {
-	block := createBlock(b.LastHash, b.Height+1)
-	b.LastHash = block.Hash
-	b.Height = block.Height
-	b.CurrentDifficulty = block.Difficulty
-	b.persist()
+/*
+ *
+ * Methods
+ */
+
+// Restore blockchain from database
+func (b *blockchain) restore(data []byte) {
+	utils.FromBytes(b, data)
 }
+
+/*
+ *
+ * Functions
+ */
 
 // Get blockchain includes all blocks
 // From database
-func (b *blockchain) Blocks() []*Block {
+func Blocks(b *blockchain) []*Block {
 	var blockchain []*Block
 	hash := b.LastHash
 
@@ -67,78 +70,28 @@ func (b *blockchain) Blocks() []*Block {
 	return blockchain
 }
 
-// Get all transactionOut from blockchain
-// Actually.. Due to this function, System should loop double times to get something from txOuts
-// I think this function should not be exists then combine with some functions to get deterministic value
-func (b *blockchain) txOuts() []*TxOut {
-	var txOuts []*TxOut
-	blockchain := b.Blocks()
-
-	for _, block := range blockchain {
-		for _, tx := range block.Transactions {
-			txOuts = append(txOuts, tx.TxOuts...)
-		}
-	}
-	return txOuts
+// Add block to blockchain
+// Save blockchain updated from latest block to database for persistence
+func AddBlock(b *blockchain) {
+	block := createBlock(b.LastHash, b.Height+1)
+	b.LastHash = block.Hash
+	b.Height = block.Height
+	b.CurrentDifficulty = block.Difficulty
+	persistBlockchain(b)
 }
 
-// Get Transaction Out of address
-func (b *blockchain) TxOutByAddress(address string) []*TxOut {
-	var txOutOfAddress []*TxOut
-	txOuts := b.txOuts()
-
-	for _, txOut := range txOuts {
-		if txOut.Owner == address {
-			txOutOfAddress = append(txOutOfAddress, txOut)
-		}
-	}
-	return txOutOfAddress
-}
-
-// Get Balance of address by TxOut
-// We have to use 2 functions with inside loops.. so wasty of memory...
-func (b *blockchain) BalanceOfAddressByTxOut(address string) int {
-	txOuts := b.TxOutByAddress(address)
-	var amount int
-	for _, txOut := range txOuts {
-		amount += txOut.Amount
-	}
-	return amount
-}
-
-/*
- * Minor Utilities
- *
- */
 // Persist block to blockchain database
-func (b *blockchain) persist() {
+func persistBlockchain(b *blockchain) {
 	db.SaveBlockchain(utils.ToBytes(b))
 }
 
-// Restore blockchain from database
-func (b *blockchain) restore(data []byte) {
-	utils.FromBytes(b, data)
-}
-
-// Generate difficulty
-func (b *blockchain) difficulty() int {
-	if b.Height == 0 {
-		return defaultDifficulty
-	} else if b.Height%difficultyInterval == 0 {
-		// bitcoin recalculate difficulty to make 2016 blocks are made in 2 weeks
-		// mimic this theory to recalculate difficulty
-		return b.recalculateDifficulty()
-	}
-	return b.CurrentDifficulty
-
-}
-
+// Recalculate difficulty using block variables
 func (b *blockchain) recalculateDifficulty() int {
-	blockchain := b.Blocks()
+	blockchain := Blocks(b)
 	newestBlock := blockchain[0]
 	lastRecalculatedBlock := blockchain[difficultyInterval-1]
 
-	// SInce Timestamp is second => make it minute
+	// Since Timestamp is seconds => make it minutes
 	actualTime := (newestBlock.TimeStamp / 60) - (lastRecalculatedBlock.TimeStamp / 60)
 	expectedTime := difficultyInterval * blockInterval // Might be generated in this time
 
@@ -148,4 +101,65 @@ func (b *blockchain) recalculateDifficulty() int {
 		return b.CurrentDifficulty - 1
 	}
 	return b.CurrentDifficulty
+}
+
+// Generate difficulty
+func difficulty(b *blockchain) int {
+	if b.Height == 0 {
+		return defaultDifficulty
+	} else if b.Height%difficultyInterval == 0 {
+		// bitcoin recalculate difficulty to make 2016 blocks are made in 2 weeks
+		// mimic this theory to recalculate difficulty
+		return b.recalculateDifficulty()
+	}
+	return b.CurrentDifficulty
+}
+
+// Get Unspent Transaction Outputs
+func UTxOutsByAddress(address string, b *blockchain) []*UTxOut {
+	var uTxOuts []*UTxOut
+
+	// Find Transaction Ids used for Transaction Input from Unspent Transaction Outputs
+	// User can use only from Unspent Transaction Outputs to make Transaction Inputs
+	usedUtxoTxIds := make(map[string]bool)
+
+	for _, block := range Blocks(b) {
+		for _, tx := range block.Transactions {
+
+			// Check Transaction inputs to find owner is equal to address
+			// Is it satisfied with address is owner of transaction inputs?
+			for _, txIn := range tx.TxIns {
+				if txIn.Owner == address {
+					usedUtxoTxIds[txIn.TxId] = true
+				}
+			}
+
+			// Only append UNSPENT transaction outputs to use
+			// Check out from usedUtxoTxIds is false --> It means Transaction output is unspent
+			for index, txOut := range tx.TxOuts {
+				if txOut.Owner == address {
+					_, used := usedUtxoTxIds[tx.Id]
+					if !used { // if unspent(unused)
+						// Check this txOut is still in mempool
+						uTxOut := &UTxOut{tx.Id, index, txOut.Amount}
+						if !isOnMempool(uTxOut) { // Not in mempool => append
+							uTxOuts = append(uTxOuts, uTxOut)
+						}
+					}
+				}
+			}
+		}
+	}
+	return uTxOuts
+}
+
+// Get Balance of address by TxOut
+// We have to use 2 functions with inside loops.. so wasty of memory...
+func BalanceOfAddressByTxOut(address string, b *blockchain) int {
+	uTxOuts := UTxOutsByAddress(address, b)
+	var amount int
+	for _, uTxOut := range uTxOuts {
+		amount += uTxOut.Amount
+	}
+	return amount
 }
