@@ -180,3 +180,16 @@ func Blocks(b *blockchain) []*Block {
 	return blockchain
 }
 ```
+
+### 7. Signature
+
+1) Get hashed message 
+	- "Message" -> hash("Message") -> "Hashed Message"
+2) Generage key pair
+	- Public Key , Private Key
+	- <u>Save private key to a file</u>
+3) Sign hased message
+	- Sign(hashed message + private key) -> signature
+4) Verify signature
+	- Verify(hashed message + signature + public key ) -> true/false
+	- Sign needs private key, but verify dont need use private key
