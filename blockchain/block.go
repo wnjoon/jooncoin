@@ -21,12 +21,12 @@ type Block struct {
 // data : data to save in block
 // prevHash : hash of previous block
 // height : height of block
-func createBlock(prevHash string, height int) *Block {
+func createBlock(prevHash string, height, difficulty int) *Block {
 	block := &Block{
 		Hash:       "",
 		PrevHash:   prevHash,
 		Height:     height,
-		Difficulty: difficulty(Blockchain()),
+		Difficulty: difficulty,
 		Nonce:      0,
 	}
 	block.mine()

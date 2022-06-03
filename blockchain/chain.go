@@ -73,7 +73,7 @@ func Blocks(b *blockchain) []*Block {
 // Add block to blockchain
 // Save blockchain updated from latest block to database for persistence
 func AddBlock(b *blockchain) {
-	block := createBlock(b.LastHash, b.Height+1)
+	block := createBlock(b.LastHash, b.Height+1, getDifficulty(b))
 	b.LastHash = block.Hash
 	b.Height = block.Height
 	b.CurrentDifficulty = block.Difficulty
@@ -104,7 +104,7 @@ func (b *blockchain) recalculateDifficulty() int {
 }
 
 // Generate difficulty
-func difficulty(b *blockchain) int {
+func getDifficulty(b *blockchain) int {
 	if b.Height == 0 {
 		return defaultDifficulty
 	} else if b.Height%difficultyInterval == 0 {
