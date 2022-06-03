@@ -190,6 +190,13 @@ func Blocks(b *blockchain) []*Block {
 	- <u>Save private key to a file</u>
 3) Sign hased message
 	- Sign(hashed message + private key) -> signature
+	- r,s,err := ecdsa.Sign(...) ==> bytes(r+s) == signature 
 4) Verify signature
 	- Verify(hashed message + signature + public key ) -> true/false
 	- Sign needs private key, but verify dont need use private key
+
+x509 
+- MarsharECPrivateKey : privatekey to bytes
+- ParseECPrivateKey : bytes to privatekey
+
+ 

@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/wnjoon/jooncoin/rest"
+	"github.com/wnjoon/jooncoin/wallet"
 )
 
 func main() {
-	rest.Start(4000)
+	// rest.Start(4000)
+	wallet.Wallet()
 }
