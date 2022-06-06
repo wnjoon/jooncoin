@@ -22,11 +22,15 @@ http://localhost:4000/balance/joon?total=true
 http://localhost:4000/balance/nico
 
 ###
-http://localhost:4000/transaction
+
+http://localhost:4000/balance/c1656caee0235311edfdb1d4c21d6b57f323f756620d9b6adffe77883d4f23593a43c7f58e1e32525bed9ebe6f46e6d362d79e53b60496f99273e2e44dcd5243
+
+###
+POST http://localhost:4000/transaction
 
 {
     "to":"nico",
-    "amount":35
+    "amount":10
 }
 
 ###
