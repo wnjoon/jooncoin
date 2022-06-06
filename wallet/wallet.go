@@ -71,7 +71,7 @@ func Sign(payload string, w *wallet) string {
 }
 
 // Verify signature
-func verify(signature, payload, address string) bool {
+func Verify(signature, payload, address string) bool {
 
 	// Restore signature
 	r, s, err := restoreBigInts(signature)

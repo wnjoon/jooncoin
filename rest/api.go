@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/wnjoon/jooncoin/blockchain"
 	"github.com/wnjoon/jooncoin/utils"
+	"github.com/wnjoon/jooncoin/wallet"
 )
 
 type url string
@@ -33,18 +34,8 @@ type ErrorResponse struct {
 	ErrorMessage string `json:"errorMessage"`
 }
 
-func handlers(router *mux.Router) {
-	router.Use(jsonContentTypeMiddleware)
-	router.HandleFunc("/", documentation).Methods("GET")
-	router.HandleFunc("/blocks", blocks).Methods("GET")
-	// router.HandleFunc("/block/{hash:[a-z0-9]*}", block).Methods("GET", "POST")
-	router.HandleFunc("/block/{hash:[a-z0-9]+}", block).Methods("GET")
-	router.HandleFunc("/block", block).Methods("POST")
-	router.HandleFunc("/status", status).Methods("GET")
-	router.HandleFunc("/balance/{address}", balance).Methods("GET")
-	router.HandleFunc("/mempool", mempool).Methods("GET")
-	router.HandleFunc("/transaction", transaction).Methods("POST")
-
+type myWalletResponse struct {
+	Address string `json:"address"`
 }
 
 // Print documentation how to use api
@@ -141,7 +132,9 @@ func transaction(rw http.ResponseWriter, r *http.Request) {
 
 	err := blockchain.Mempool.AddTx(payload.To, payload.Amount)
 	if err != nil {
-		json.NewEncoder(rw).Encode(utils.ErrorResponse{ErrorMessage: "not Enough funds"})
+		rw.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(rw).Encode(utils.ErrorResponse{ErrorMessage: err.Error()})
+		return
 	}
 	rw.WriteHeader(http.StatusCreated)
 
@@ -169,4 +162,10 @@ func jsonContentTypeMiddleware(next http.Handler) http.Handler {
 		rw.Header().Add("Content-Type", "application/json")
 		next.ServeHTTP(rw, r)
 	})
+}
+
+// Find wallet
+func myWallet(rw http.ResponseWriter, r *http.Request) {
+	address := wallet.Wallet().Address
+	json.NewEncoder(rw).Encode(myWalletResponse{Address: address})
 }

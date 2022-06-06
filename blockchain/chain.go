@@ -124,24 +124,33 @@ func UTxOutsByAddress(address string, b *blockchain) []*UTxOut {
 	usedUtxoTxIds := make(map[string]bool)
 
 	for _, block := range Blocks(b) {
-		for _, tx := range block.Transactions {
+		for _, prevTx := range block.Transactions {
 
 			// Check Transaction inputs to find owner is equal to address
 			// Is it satisfied with address is owner of transaction inputs?
-			for _, txIn := range tx.TxIns {
-				if txIn.Owner == address {
-					usedUtxoTxIds[txIn.TxId] = true
+			// 이제까지 송신자가 사용했던 모든 값(TxIn)들을 확인
+			for _, prevTxIn := range prevTx.TxIns {
+
+				// Should not include coinbase
+				if prevTxIn.Signature == CoinbaseName {
+					break
+				}
+
+				//
+				if FindTx(b, prevTxIn.TxId).TxOuts[prevTxIn.Index].Address == address {
+					usedUtxoTxIds[prevTxIn.TxId] = true
 				}
 			}
 
 			// Only append UNSPENT transaction outputs to use
 			// Check out from usedUtxoTxIds is false --> It means Transaction output is unspent
-			for index, txOut := range tx.TxOuts {
-				if txOut.Owner == address {
-					_, used := usedUtxoTxIds[tx.Id]
+			// 송신자가 '아직 사용하지 않은 모든 TxOut들'을 확인
+			for index, txOut := range prevTx.TxOuts {
+				if txOut.Address == address {
+					_, used := usedUtxoTxIds[prevTx.Id]
 					if !used { // if unspent(unused)
 						// Check this txOut is still in mempool
-						uTxOut := &UTxOut{tx.Id, index, txOut.Amount}
+						uTxOut := &UTxOut{prevTx.Id, index, txOut.Amount}
 						if !isOnMempool(uTxOut) { // Not in mempool => append
 							uTxOuts = append(uTxOuts, uTxOut)
 						}
@@ -162,4 +171,24 @@ func BalanceOfAddressByTxOut(address string, b *blockchain) int {
 		amount += uTxOut.Amount
 	}
 	return amount
+}
+
+// Get Transactions inside blockchain already confirmed
+func Txs(b *blockchain) []*Tx {
+	var txs []*Tx
+	for _, block := range Blocks(b) {
+		txs = append(txs, block.Transactions...)
+	}
+	return txs
+}
+
+// Find Transaction by target transaction id
+// from all transactions inside blockchain(Txs)
+func FindTx(b *blockchain, target string) *Tx {
+	for _, tx := range Txs(b) {
+		if tx.Id == target {
+			return tx
+		}
+	}
+	return nil
 }

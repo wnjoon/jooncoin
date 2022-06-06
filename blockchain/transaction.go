@@ -1,15 +1,14 @@
 package blockchain
 
 import (
-	"errors"
-
 	"github.com/wnjoon/jooncoin/utils"
+	"github.com/wnjoon/jooncoin/wallet"
 )
 
 const (
 	// TODO : THIS IS A TEST VALUE => SHOULD REMOVE IT
 	mineReward   int    = 50
-	coinbaseName string = "COINBASE"
+	CoinbaseName string = "COINBASE"
 	testAddress  string = "joon"
 )
 
@@ -23,15 +22,15 @@ type Tx struct {
 
 // Struct for transaction input
 type TxIn struct {
-	TxId  string `json:"txId"`  // Transaction Id used to create transaction output
-	Index int    `json:"index"` // Index where transaction output is come from in transaction input
-	Owner string `json:"owner"`
+	TxId      string `json:"txId"`  // Transaction Id used to create transaction output
+	Index     int    `json:"index"` // Index where transaction output is come from in transaction input
+	Signature string `json:"signature"`
 }
 
 // Struct for transaction output already spent
 type TxOut struct {
-	Owner  string `json:"owner"`
-	Amount int    `json:"amount"`
+	Address string `json:"address"`
+	Amount  int    `json:"amount"`
 }
 
 // Struct for transaction output unspent yet
@@ -59,7 +58,7 @@ func (t *Tx) getId() {
 func createCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
 		// Initialize TxIn with empty value and coinbase
-		{"", -1, coinbaseName},
+		{"", -1, CoinbaseName},
 	}
 	txOuts := []*TxOut{
 		{address, mineReward},
@@ -78,7 +77,7 @@ func createCoinbaseTx(address string) *Tx {
 // Not by coinbase (from user)
 func createTx(from, to string, amount int) (*Tx, error) {
 	if BalanceOfAddressByTxOut(from, Blockchain()) < amount {
-		return nil, errors.New("not enough amount to spend")
+		return nil, utils.ErrNotEnoughMoney
 	}
 
 	var txOuts []*TxOut
@@ -122,13 +121,17 @@ func createTx(from, to string, amount int) (*Tx, error) {
 	}
 
 	tx.getId()
+	tx.sign()
+	if !validate(tx) {
+		return nil, utils.ErrNotValidated
+	}
 	return tx, nil
 
 }
 
 // Add Transaction to mempool
 func (m *mempool) AddTx(to string, amount int) error {
-	tx, err := createTx(testAddress, to, amount)
+	tx, err := createTx(wallet.Wallet().Address, to, amount)
 	if err != nil {
 		return err
 	}
@@ -139,7 +142,7 @@ func (m *mempool) AddTx(to string, amount int) error {
 // Confirm transaction in Mempool
 // This will be happened when mining
 func (m *mempool) TxConfirm() []*Tx {
-	coinbase := createCoinbaseTx(testAddress)
+	coinbase := createCoinbaseTx(wallet.Wallet().Address)
 	txs := m.Txs
 	txs = append(txs, coinbase) // Add coinbase for reward of mining
 	m.Txs = nil                 // delete all transactions in mempool
@@ -157,4 +160,34 @@ func isOnMempool(uTxOut *UTxOut) bool {
 		}
 	}
 	return false
+}
+
+// Sign transaction Id with wallet
+func (t *Tx) sign() {
+	for _, txIn := range t.TxIns {
+		txIn.Signature = wallet.Sign(t.Id, wallet.Wallet())
+	}
+}
+
+// Validate transaction
+func validate(tx *Tx) bool {
+	valid := true
+	for _, txIn := range tx.TxIns {
+		// 이전에 존재하는 트랜잭션들 중에서 이번 트랜잭션에 사용된(TxIn) ID와 동일한 내용이 실제로 존재하는지 확인
+		prevTx := FindTx(Blockchain(), txIn.TxId)
+		if prevTx == nil {
+			valid = false
+			break
+		}
+
+		// If previous transaction including txId exists,
+		// 이전에 존재하던 그 트랜잭션은 진짜 '내가' 만들었던 트랜잭션이 맞는지 확인
+		address := prevTx.TxOuts[txIn.Index].Address
+		valid = wallet.Verify(txIn.Signature, tx.Id, address)
+		if !valid {
+			break
+		}
+	}
+
+	return valid
 }
