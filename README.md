@@ -67,7 +67,7 @@ Transaction can be seperated into 2 models, Transaction input and Transaction ou
 
 So If user wants to know how much money in blockchain network, <u>Only counting on TxOut is necessary</u> and this is a mechanism of bitcoin(and also this mimic coin).  
 
-#### Steps
+#### 1.1. Steps
 
 When creating transaction, UTXO list should be returned first.  
 
@@ -113,7 +113,10 @@ func (b *blockchain) UTxOutsByAddress(address string) []*UTxOut {
 	return uTxOuts
 }
 ```
-q
+#### 1.2. Concepts
+
+![image](etc/utxo.png)  
+
 ### 2. Coinbase
 
 It indicates <u>how to reward to miner</u> and what to write for creation TxIn.  
