@@ -67,6 +67,53 @@ Transaction can be seperated into 2 models, Transaction input and Transaction ou
 
 So If user wants to know how much money in blockchain network, <u>Only counting on TxOut is necessary</u> and this is a mechanism of bitcoin(and also this mimic coin).  
 
+#### Steps
+
+When creating transaction, UTXO list should be returned first.  
+
+```go
+func (b *blockchain) UTxOutsByAddress(address string) []*UTxOut {
+	var uTxOuts []*UTxOut
+
+	// This slice indicates 'used UTXO'
+	// First, Find TxIns equal to sender(from) address
+	// Then, store Tx Id of found TxIn to slice
+	usedUtxoTxIds := make(map[string]bool)
+
+	// 1, Search all blocks
+	for _, block := range b.Blocks() {
+
+		// 2. Search all transactions inside block
+		for _, tx := range block.Transactions {
+
+			// 3.1 Check Transaction inputs inside transaction to find owner is equal to sender address
+			for _, txIn := range tx.TxIns {
+				if txIn.Owner == address {
+					// 3.1.1. If there is a TxIn from address, switch to true (it means "used!")
+					usedUtxoTxIds[txIn.Owner] = true
+				}
+			}
+
+			// 3.2. Check Transaction Outputs inside transaction to find owner is equal to sender address
+			for index, txOut := range tx.TxOuts {
+				if txOut.Owner == address {
+
+					// 3.2.1. Check out from usedUtxoTxIds is false 
+					//    --> It means Transaction output is unspent
+					_, used := usedUtxoTxIds[tx.Id]
+					if !used { // if unspent(unused) => append
+						uTxOuts = append(uTxOuts, &UTxOut{tx.Id, index, txOut.Amount})
+					}
+				}
+			}
+		}
+	}
+	// Stored in TxOuts but not TxIns
+	// -> Never used to transaction = UTXO
+	return uTxOuts
+}
+```
+q
 ### 2. Coinbase
 
 It indicates <u>how to reward to miner</u> and what to write for creation TxIn.  
@@ -82,52 +129,8 @@ Mempool only exists in memory, not database.
 
 > When Miner makes a block, User pay a fee to miner for their effort
 
-### 4. Unspent Transaction Output (UTXO)
 
-In transaction allocated in block, There are 2 types of transactions 'TxIn', 'TxOut'.  
-
-```go
-func (b *blockchain) UTxOutsByAddress(address string) []*UTxOut {
-	var uTxOuts []*UTxOut
-
-	// Find Transaction Ids used for Transaction Input from Unspent Transaction Outputs
-	// User can use only from Unspent Transaction Outputs to make Transaction Inputs
-	usedUtxoTxIds := make(map[string]bool)
-
-	// 1, Search all blocks
-	for _, block := range b.Blocks() {
-
-		// 2. Search all transactions inside block (too many loop but no way)
-		for _, tx := range block.Transactions {
-
-			// 3. Check Transaction inputs to find owner is equal to address
-			//    -> Transaction Input : Way point to find transaction ouputs
-			for _, txIn := range tx.TxIns {
-				if txIn.Owner == address {
-					// If there is a TxIn from address, switch to true (it means "used!")
-					usedUtxoTxIds[txIn.Owner] = true
-				}
-			}
-
-			// 4. Only append UNSPENT transaction outputs to use
-			for index, txOut := range tx.TxOuts {
-				if txOut.Owner == address {
-
-					// 5. Check out from usedUtxoTxIds is false 
-					//    --> It means Transaction output is unspent
-					_, used := usedUtxoTxIds[tx.Id]
-					if !used { // if unspent(unused) => append
-						uTxOuts = append(uTxOuts, &UTxOut{tx.Id, index, txOut.Amount})
-					}
-				}
-			}
-		}
-	}
-	return uTxOuts
-}
-```
-
-### 5. Labels
+### 4. Labels
 
 If programmer wants to break a loop over than it exists, Golang supports to use 'Label'.  
 
@@ -148,7 +151,7 @@ Outer:
 }
 ```
 
-### 6. Method(Reciever function) / Function
+### 5. Method(Reciever function) / Function
 
 - Method : <u>Changes</u> inside of struct value
 - Function : <u>Don't change</u> inside of struct value
@@ -181,7 +184,7 @@ func Blocks(b *blockchain) []*Block {
 }
 ```
 
-### 7. Signature
+### 6. Signature
 
 1) Get hashed message 
 	- "Message" -> hash("Message") -> "Hashed Message"
@@ -199,4 +202,4 @@ x509
 - MarsharECPrivateKey : privatekey to bytes
 - ParseECPrivateKey : bytes to privatekey
 
- 
+ <br>
